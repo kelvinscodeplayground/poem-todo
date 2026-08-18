@@ -1,5 +1,5 @@
 use poem_openapi::{
-    ApiResponse, OpenApi,
+    OpenApi,
     payload::{Json, PlainText},
 };
 
@@ -10,17 +10,9 @@ pub struct AuthController;
 #[OpenApi]
 impl AuthController {
     #[oai(path = "/login", method = "post")]
-    pub async fn login(&self, credential: Json<LoginRequestDto>) -> AuthResponseType {
+    pub async fn login(&self, credential: Json<LoginRequestDto>) -> PlainText<String> {
         // Implement your login logic here
         log::info!("Login attempt with {:?}", credential);
-        AuthResponseType::Ok(PlainText("Login successful".into()))
+        PlainText("Login successful".into())
     }
-}
-
-#[derive(Debug, ApiResponse)]
-pub enum AuthResponseType {
-    #[oai(status = 200)]
-    Ok(PlainText<String>),
-    #[oai(status = 401)]
-    Unauthorized,
 }
