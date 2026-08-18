@@ -2,15 +2,14 @@ use argon2::{
     Argon2, PasswordHasher, PasswordVerifier,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use poem::{Result, http::StatusCode};
-use poem_openapi::{
-    OpenApi,
-    payload::{Json, PlainText},
-};
+use poem::web::{Data, Json};
+use poem::{Error, Result, http::StatusCode};
+use poem_openapi::{OpenApi, payload::PlainText};
 
 use crate::{
     dto::{login_request_dto::LoginRequestDto, register_request_dto::RegisterRequestDto},
-    entity::user::User,
+    service::auth_service,
+    types::app_state::AppState,
 };
 
 pub struct AuthController;
@@ -47,33 +46,14 @@ impl AuthController {
     /// Allow users to register by providing a username, password, and email. The password will be hashed using Argon2
     /// before storing it in the database.
     #[oai(path = "/register", method = "post")]
-    pub async fn register(&self, body: Json<RegisterRequestDto>) -> Result<Json<User>> {
-        let password = body.password.as_bytes();
-        let argon2 = Argon2::default();
-        let salt = SaltString::generate(&mut OsRng);
-        let hash = argon2.hash_password(password, &salt);
-        match hash {
-            Ok(hash) => {
-                let hash_str = hash.to_string();
-                log::info!("Password hashed successfully: {}", hash_str);
-                // Here you would typically save the user to the database
-                // For demonstration, we will just return a dummy user
-                let user = User {
-                    id: "dummy_id".into(),
-                    username: body.username.clone(),
-                    email: body.email.clone(),
-                    password_hash: hash_str,
-                    created_at: chrono::Utc::now().timestamp(),
-                };
-                Ok(Json(user))
-            }
-            Err(e) => {
-                log::error!("Failed to hash password: {}", e);
-                Err(poem::Error::from_string(
-                    "Failed to register user",
-                    poem::http::StatusCode::INTERNAL_SERVER_ERROR,
-                ))
-            }
-        }
+    pub async fn register(
+        &self,
+        data: Data<&AppState>,
+        body: Json<RegisterRequestDto>,
+    ) -> Result<PlainText<String>> {
+        auth_service::create_user(data.sql_pool.clone(), &body)
+            .await
+            .map_err(|_e| Error::from_string("failed to create user", StatusCode::BAD_REQUEST))?;
+        Ok(PlainText("".to_string()))
     }
 }

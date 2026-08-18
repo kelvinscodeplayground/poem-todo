@@ -13,6 +13,8 @@ use crate::{
 mod controller;
 mod dto;
 mod entity;
+mod repository;
+mod service;
 mod types;
 
 #[tokio::main]
