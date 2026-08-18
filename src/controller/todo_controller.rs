@@ -1,6 +1,6 @@
 use poem_openapi::{OpenApi, payload::Json};
 
-use crate::{dto::todo_response_dto::TodoResponseType, entity::todo_entity::Todo};
+use crate::{dto::todo_response_dto::TodoResponseType, entity::todo::Todo};
 
 pub struct TodoController;
 

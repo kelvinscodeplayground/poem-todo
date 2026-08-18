@@ -1,6 +1,6 @@
 use poem_openapi::{ApiResponse, payload::Json};
 
-use crate::entity::todo_entity::Todo;
+use crate::entity::todo::Todo;
 
 #[derive(Debug, ApiResponse)]
 pub enum TodoResponseType {
