@@ -1,20 +1,13 @@
 use anyhow::Result;
 use log;
 use poem::{Route, Server, listener::TcpListener};
-use poem_openapi::{OpenApi, OpenApiService, param::Query, payload::PlainText};
+use poem_openapi::OpenApiService;
 
-struct Api;
+use crate::controller::todo_controller::TodoController;
 
-#[OpenApi]
-impl Api {
-    #[oai(path = "/hello", method = "get")]
-    async fn index(&self, name: Query<Option<String>>) -> PlainText<String> {
-        match name.0 {
-            Some(n) => PlainText(format!("Hello! {}", n)),
-            None => PlainText("Oh Hi!".to_string()),
-        }
-    }
-}
+mod controller;
+mod dto;
+mod entity;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +21,7 @@ async fn main() -> Result<()> {
     log::info!("Initializing app...");
 
     let api_service =
-        OpenApiService::new(Api, "Hello world", "1.0").server("http://localhost:8080");
+        OpenApiService::new(TodoController, "Hello world", "1.0").server("http://localhost:8080");
     let ui = api_service.swagger_ui();
     let app = Route::new().nest("/", api_service).nest("/docs", ui);
     Server::new(TcpListener::bind("127.0.0.1:8080"))
