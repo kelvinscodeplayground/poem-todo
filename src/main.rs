@@ -5,7 +5,10 @@ use log;
 use poem::{EndpointExt, Route, Server, listener::TcpListener, middleware::Cors};
 use poem_openapi::OpenApiService;
 
-use crate::{controller::todo_controller::TodoController, types::app_state::DbPool};
+use crate::{
+    controller::{auth_controller::AuthController, todo_controller::TodoController},
+    types::app_state::DbPool,
+};
 
 mod controller;
 mod dto;
@@ -25,8 +28,8 @@ async fn main() -> Result<()> {
     let state = create_initial_state().await?;
     migrate_db(&state.sql_pool).await?;
 
-    let api_service =
-        OpenApiService::new(TodoController, "Hello world", "1.0").server("http://localhost:8080");
+    let api_service = OpenApiService::new((AuthController, TodoController), "Hello world", "1.0")
+        .server("http://localhost:8080");
     let ui = api_service.swagger_ui();
     let app = Route::new()
         .nest("/", api_service)
