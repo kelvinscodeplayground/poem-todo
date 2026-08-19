@@ -85,7 +85,7 @@ pub async fn verify_password(password: &str, hash: &str) -> bool {
     let parsed_hash = match PasswordHash::new(hash) {
         Ok(hash) => hash,
         Err(e) => {
-            log::error!("Error parsing password hash: {:?}", e);
+            log::error!("Error parsing password hash: {}", e);
             return false;
         }
     };

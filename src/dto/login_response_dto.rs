@@ -27,6 +27,12 @@ pub enum LoginResponseType {
     InternalServerError,
 }
 
+impl Default for LoginResponseType {
+    fn default() -> Self {
+        LoginResponseType::InternalServerError
+    }
+}
+
 impl From<anyhow::Error> for LoginResponseType {
     fn from(error: anyhow::Error) -> Self {
         match error.downcast_ref::<AuthServiceError>() {
@@ -36,11 +42,14 @@ impl From<anyhow::Error> for LoginResponseType {
             Some(AuthServiceError::UserNotFound) => {
                 LoginResponseType::Unauthorized(PlainText(error.to_string()))
             }
-            Some(AuthServiceError::UserAlreadyExists) => LoginResponseType::InternalServerError,
-            Some(AuthServiceError::PasswordRequirementsNotMet) => {
-                LoginResponseType::InternalServerError
+            Some(_) => {
+                log::error!("Login Response Transform Error: {}", error);
+                Default::default()
             }
-            None => LoginResponseType::InternalServerError,
+            None => {
+                log::error!("Login Response Transform Error: {}", error);
+                Default::default()
+            }
         }
     }
 }

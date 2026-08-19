@@ -16,7 +16,13 @@ pub enum RegisterResponseType {
     BadRequest(PlainText<String>),
     /// Internal server error
     #[oai(status = 500)]
-    InternalServerError(PlainText<String>),
+    InternalServerError,
+}
+
+impl Default for RegisterResponseType {
+    fn default() -> Self {
+        RegisterResponseType::InternalServerError
+    }
 }
 
 impl From<anyhow::Error> for RegisterResponseType {
@@ -26,13 +32,14 @@ impl From<anyhow::Error> for RegisterResponseType {
             Some(AuthServiceError::PasswordRequirementsNotMet) => {
                 RegisterResponseType::BadRequest(PlainText(error.to_string()))
             }
-            Some(AuthServiceError::UserNotFound) => {
-                RegisterResponseType::InternalServerError(PlainText(error.to_string()))
+            Some(_) => {
+                log::error!("Register Response Transform Error: {}", error);
+                Default::default()
             }
-            Some(AuthServiceError::BadCredentials) => {
-                RegisterResponseType::InternalServerError(PlainText(error.to_string()))
+            None => {
+                log::error!("Register Response Transform Error: {}", error);
+                Default::default()
             }
-            None => RegisterResponseType::InternalServerError(PlainText(error.to_string())),
         }
     }
 }
