@@ -6,3 +6,9 @@ pub async fn create_user(pool: &DbPool, user: &User) -> Result<()> {
         DbPool::Sqlite(pool) => sqlite::user_repository::create_user(pool, user).await,
     }
 }
+
+pub async fn get_user_by_username(pool: &DbPool, username: &str) -> Result<Option<User>> {
+    match pool {
+        DbPool::Sqlite(pool) => sqlite::user_repository::get_user_by_username(pool, username).await,
+    }
+}

@@ -1,6 +1,8 @@
 use anyhow::Result;
 use sqlx::SqlitePool;
 
+use crate::entity::user::User;
+
 pub async fn create_user(pool: &SqlitePool, user: &crate::entity::user::User) -> Result<()> {
     sqlx::query(
         "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -14,4 +16,17 @@ pub async fn create_user(pool: &SqlitePool, user: &crate::entity::user::User) ->
     .await?;
 
     Ok(())
+}
+
+pub async fn get_user_by_username(
+    pool: &SqlitePool,
+    username: &str,
+) -> Result<Option<crate::entity::user::User>> {
+    let user = sqlx::query_as::<_, User>(
+        "SELECT id, username, email, password_hash, created_at FROM users WHERE username = ?",
+    )
+    .bind(username)
+    .fetch_optional(pool)
+    .await?;
+    Ok(user)
 }

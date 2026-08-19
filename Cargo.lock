@@ -1245,6 +1245,7 @@ dependencies = [
  "poem-openapi",
  "serde",
  "sqlx",
+ "thiserror",
  "tokio",
  "tracing-subscriber",
  "uuid",
