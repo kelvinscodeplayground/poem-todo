@@ -1,14 +1,11 @@
 use anyhow::Result;
 
 use crate::{
-    dto::register_request_dto::RegisterRequestDto,
-    entity::user::User,
-    repository::{base_repo::BaseRepo, sqlite_repo::SQLiteRepo},
-    types::app_state::DbPool,
+    dto::register_request_dto::RegisterRequestDto, entity::user::User,
+    repository::base::user_repository, types::app_state::DbPool,
 };
 
 pub async fn create_user(db_pool: DbPool, new_user: &RegisterRequestDto) -> Result<()> {
-    let repo = SQLiteRepo::new(db_pool);
     let user = User {
         id: uuid::Uuid::new_v4().to_string(),
         username: new_user.username.clone(),
@@ -16,6 +13,6 @@ pub async fn create_user(db_pool: DbPool, new_user: &RegisterRequestDto) -> Resu
         password_hash: new_user.password.clone(), // In a real application, you should hash the password before storing it
         created_at: chrono::Utc::now().timestamp(),
     };
-    repo.create_user(&user).await?;
+    user_repository::create_user(&db_pool, &user).await?;
     Ok(())
 }

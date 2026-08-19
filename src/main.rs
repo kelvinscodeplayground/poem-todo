@@ -47,14 +47,18 @@ async fn main() -> Result<()> {
 
 async fn migrate_db(pool: &DbPool) -> Result<()> {
     log::info!("Migrating database...");
-    sqlx::migrate!("./migrations").run(pool).await?;
+    match pool {
+        DbPool::Sqlite(pool) => sqlx::migrate!("./migrations").run(pool).await?,
+    }
     Ok(())
 }
 
 async fn create_initial_state() -> Result<types::app_state::AppState> {
+    use sqlx::sqlite::SqliteConnectOptions;
+    use sqlx::sqlite::SqlitePool;
+
     log::info!("Creating initial state...");
-    let options =
-        sqlx::sqlite::SqliteConnectOptions::from_str("sqlite:./todo.db")?.create_if_missing(true);
-    let pool = DbPool::connect_with(options).await?;
+    let options = SqliteConnectOptions::from_str("sqlite:./todo.db")?.create_if_missing(true);
+    let pool = DbPool::Sqlite(SqlitePool::connect_with(options).await?);
     Ok(types::app_state::AppState { sql_pool: pool })
 }

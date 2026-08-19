@@ -1,2 +1,2 @@
-pub mod base_repo;
-pub mod sqlite_repo;
+pub mod base;
+pub mod sqlite;
