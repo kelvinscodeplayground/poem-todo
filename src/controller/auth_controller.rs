@@ -3,11 +3,13 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use poem::web::{Data, Json};
-use poem::{Error, Result, http::StatusCode};
 use poem_openapi::{OpenApi, payload::PlainText};
 
 use crate::{
-    dto::{login_request_dto::LoginRequestDto, register_request_dto::RegisterRequestDto},
+    dto::{
+        login_request_dto::LoginRequestDto, register_request_dto::RegisterRequestDto,
+        register_response_dto::RegisterResponseType,
+    },
     service::auth_service::{self, AuthServiceError},
     types::app_state::AppState,
 };
@@ -50,19 +52,21 @@ impl AuthController {
         &self,
         data: Data<&AppState>,
         body: Json<RegisterRequestDto>,
-    ) -> Result<PlainText<String>> {
-        auth_service::create_user(&data.sql_pool, &body)
+    ) -> RegisterResponseType {
+        let result = auth_service::create_user(&data.sql_pool, &body)
             .await
             .map_err(|e| {
                 log::error!("Failed to create user: {}", e);
                 match e.downcast_ref() {
-                    Some(AuthServiceError::UserAlreadyExists) => {
-                        Error::from_status(StatusCode::CONFLICT)
-                    }
-                    _ => Error::from_status(StatusCode::INTERNAL_SERVER_ERROR),
+                    Some(AuthServiceError::UserAlreadyExists) => RegisterResponseType::Conflict,
+                    _ => RegisterResponseType::InternalServerError(PlainText("Error".into())),
                 }
-            })?;
+            });
 
-        Ok(PlainText("User registered successfully".to_string()))
+        if let Err(e) = result {
+            return e;
+        }
+
+        RegisterResponseType::Ok(PlainText("User registered successfully".to_string()))
     }
 }
