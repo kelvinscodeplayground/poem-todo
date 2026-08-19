@@ -9,6 +9,9 @@ pub enum RegisterResponseType {
     /// User already exists
     #[oai(status = 409)]
     Conflict,
+    /// Bad request
+    #[oai(status = 400)]
+    BadRequest(PlainText<String>),
     /// Internal server error
     #[oai(status = 500)]
     InternalServerError(PlainText<String>),

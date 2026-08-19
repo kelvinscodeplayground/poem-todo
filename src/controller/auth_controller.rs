@@ -2,8 +2,11 @@ use argon2::{
     Argon2, PasswordHasher, PasswordVerifier,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use poem::web::{Data, Json};
-use poem_openapi::{OpenApi, payload::PlainText};
+use poem::web::Data;
+use poem_openapi::{
+    OpenApi,
+    payload::{Json, PlainText},
+};
 
 use crate::{
     dto::{
@@ -59,6 +62,9 @@ impl AuthController {
                 log::error!("Failed to create user: {}", e);
                 match e.downcast_ref() {
                     Some(AuthServiceError::UserAlreadyExists) => RegisterResponseType::Conflict,
+                    Some(AuthServiceError::PasswordRequirementsNotMet) => {
+                        RegisterResponseType::BadRequest(PlainText(e.to_string()))
+                    }
                     _ => RegisterResponseType::InternalServerError(PlainText("Error".into())),
                 }
             });

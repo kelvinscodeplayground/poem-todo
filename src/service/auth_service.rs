@@ -14,15 +14,29 @@ use crate::{
 ///
 /// # Returns
 /// * `Result<()>` - Returns Ok(()) if the user was created successfully
-/// * `Err([`AuthServiceError::UserAlreadyExists`])` if the username already exists
 ///
 /// # Errors
 /// * `AuthServiceError::UserAlreadyExists` if the username already exists in the database
+/// * `AuthServiceError::PasswordRequirementsNotMet` if the password does not meet the requirements
 pub async fn create_user(db_pool: &DbPool, new_user: &RegisterRequestDto) -> Result<()> {
     let existing = get_user_by_username(db_pool, &new_user.username).await?;
 
     if existing.is_some() {
         return Err(AuthServiceError::UserAlreadyExists.into());
+    }
+
+    let pwd = &new_user.password;
+    let pwd_valid = new_user.password == new_user.confirm_password
+        && pwd.len() >= 8
+        && pwd.chars().any(|c| c.is_lowercase())
+        && pwd.chars().any(|c| c.is_uppercase())
+        && pwd.chars().any(|c| c.is_numeric())
+        && pwd
+            .chars()
+            .any(|c| matches!(c, '@' | '$' | '!' | '%' | '*' | '?' | '&'));
+
+    if !pwd_valid {
+        return Err(AuthServiceError::PasswordRequirementsNotMet.into());
     }
 
     let user = User {
@@ -60,4 +74,6 @@ pub async fn get_user_by_username(db_pool: &DbPool, username: &str) -> Result<Op
 pub enum AuthServiceError {
     #[error("User already exists")]
     UserAlreadyExists,
+    #[error("Password does not meet the requirements")]
+    PasswordRequirementsNotMet,
 }
