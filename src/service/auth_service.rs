@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use thiserror::Error;
 
 use crate::{
@@ -11,14 +11,18 @@ use crate::{
 /// # Arguments
 /// * `db_pool` - A reference to the database connection pool
 /// * `new_user` - A reference to the RegisterRequestDto containing the new user's information
+///
 /// # Returns
 /// * `Result<()>` - Returns Ok(()) if the user was created successfully
-/// * `Err(AuthSerivceError::UserAlreadyExists)` if the username already exists
+/// * `Err([`AuthServiceError::UserAlreadyExists`])` if the username already exists
+///
+/// # Errors
+/// * `AuthServiceError::UserAlreadyExists` if the username already exists in the database
 pub async fn create_user(db_pool: &DbPool, new_user: &RegisterRequestDto) -> Result<()> {
     let existing = get_user_by_username(db_pool, &new_user.username).await?;
 
     if existing.is_some() {
-        return Err(AuthSerivceError::UserAlreadyExists.into());
+        return Err(AuthServiceError::UserAlreadyExists.into());
     }
 
     let user = User {
@@ -53,7 +57,7 @@ pub async fn get_user_by_username(db_pool: &DbPool, username: &str) -> Result<Op
 
 // Custom error type for the auth service
 #[derive(Debug, Error)]
-pub enum AuthSerivceError {
+pub enum AuthServiceError {
     #[error("User already exists")]
     UserAlreadyExists,
 }

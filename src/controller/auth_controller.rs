@@ -8,7 +8,7 @@ use poem_openapi::{OpenApi, payload::PlainText};
 
 use crate::{
     dto::{login_request_dto::LoginRequestDto, register_request_dto::RegisterRequestDto},
-    service::auth_service::{self, AuthSerivceError},
+    service::auth_service::{self, AuthServiceError},
     types::app_state::AppState,
 };
 
@@ -51,19 +51,18 @@ impl AuthController {
         data: Data<&AppState>,
         body: Json<RegisterRequestDto>,
     ) -> Result<PlainText<String>> {
-        let result = auth_service::create_user(&data.sql_pool, &body).await;
-        if let Err(e) = &result {
-            log::error!("Failed to create user: {}", e);
-            match e.downcast_ref() {
-                Some(AuthSerivceError::UserAlreadyExists) => {
-                    return Err(Error::from_status(StatusCode::CONFLICT));
+        auth_service::create_user(&data.sql_pool, &body)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to create user: {}", e);
+                match e.downcast_ref() {
+                    Some(AuthServiceError::UserAlreadyExists) => {
+                        Error::from_status(StatusCode::CONFLICT)
+                    }
+                    _ => Error::from_status(StatusCode::INTERNAL_SERVER_ERROR),
                 }
-                _ => {
-                    return Err(Error::from_status(StatusCode::INTERNAL_SERVER_ERROR));
-                }
-            }
-        };
+            })?;
 
-        Ok(PlainText("".to_string()))
+        Ok(PlainText("User registered successfully".to_string()))
     }
 }
