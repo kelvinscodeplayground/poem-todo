@@ -4,6 +4,8 @@ use poem_openapi::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::service::auth_service::AuthServiceError;
+
 /// Response DTO for the login endpoint
 #[derive(Debug, Object, Serialize, Deserialize, Default)]
 pub struct LoginResponseDto {
@@ -23,4 +25,22 @@ pub enum LoginResponseType {
     Unauthorized(PlainText<String>),
     #[oai(status = 500)]
     InternalServerError,
+}
+
+impl From<anyhow::Error> for LoginResponseType {
+    fn from(error: anyhow::Error) -> Self {
+        match error.downcast_ref::<AuthServiceError>() {
+            Some(AuthServiceError::BadCredentials) => {
+                LoginResponseType::Unauthorized(PlainText(error.to_string()))
+            }
+            Some(AuthServiceError::UserNotFound) => {
+                LoginResponseType::Unauthorized(PlainText(error.to_string()))
+            }
+            Some(AuthServiceError::UserAlreadyExists) => LoginResponseType::InternalServerError,
+            Some(AuthServiceError::PasswordRequirementsNotMet) => {
+                LoginResponseType::InternalServerError
+            }
+            None => LoginResponseType::InternalServerError,
+        }
+    }
 }

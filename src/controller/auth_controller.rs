@@ -11,7 +11,7 @@ use crate::{
         register_request_dto::RegisterRequestDto,
         register_response_dto::RegisterResponseType,
     },
-    service::auth_service::{self, AuthServiceError},
+    service::auth_service::{self},
     types::app_state::AppState,
 };
 
@@ -32,25 +32,15 @@ impl AuthController {
         let result =
             auth_service::login_user(&data.sql_pool, &credential.username, &credential.password)
                 .await
-                .map_err(|e| match e.downcast_ref() {
-                    Some(AuthServiceError::BadCredentials) => {
-                        LoginResponseType::Unauthorized(PlainText(e.to_string()))
-                    }
-                    Some(AuthServiceError::UserNotFound) => {
-                        LoginResponseType::Unauthorized(PlainText(e.to_string()))
-                    }
-                    _ => {
-                        log::error!("Failed to login user: {}", e);
-                        LoginResponseType::InternalServerError
-                    }
+                .map_err(|e| LoginResponseType::from(e))
+                .map(|u| LoginResponseDto {
+                    token: "test".into(),
+                    username: u.username,
+                    expires_at: 0,
                 });
 
         match result {
-            Ok(user) => LoginResponseType::Ok(Json(LoginResponseDto {
-                token: "test".into(),
-                username: user.username,
-                expires_at: 0,
-            })),
+            Ok(dto) => LoginResponseType::Ok(Json(dto)),
             Err(e) => e,
         }
     }
@@ -67,21 +57,14 @@ impl AuthController {
     ) -> RegisterResponseType {
         let result = auth_service::create_user(&data.sql_pool, &body)
             .await
-            .map_err(|e| {
-                log::error!("Failed to create user: {}", e);
-                match e.downcast_ref() {
-                    Some(AuthServiceError::UserAlreadyExists) => RegisterResponseType::Conflict,
-                    Some(AuthServiceError::PasswordRequirementsNotMet) => {
-                        RegisterResponseType::BadRequest(PlainText(e.to_string()))
-                    }
-                    _ => RegisterResponseType::InternalServerError(PlainText("Error".into())),
-                }
+            .map_err(|e| RegisterResponseType::from(e))
+            .map(|_| {
+                RegisterResponseType::Ok(PlainText("User registered successfully".to_string()))
             });
 
-        if let Err(e) = result {
-            return e;
+        match result {
+            Ok(r) => r,
+            Err(e) => e,
         }
-
-        RegisterResponseType::Ok(PlainText("User registered successfully".to_string()))
     }
 }
